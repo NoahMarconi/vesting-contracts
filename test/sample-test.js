@@ -1,14 +1,24 @@
-const { expect } = require("chai");
+const chai = require("chai");
+const { ethers, waffle } = require("hardhat");
+const { time } = require("@openzeppelin/test-helpers");
+const should = require("should");
 
-describe("Greeter", function() {
-  it("Should return the new greeting once it's changed", async function() {
-    const Greeter = await ethers.getContractFactory("Greeter");
-    const greeter = await Greeter.deploy("Hello, world!");
-    
-    await greeter.deployed();
-    expect(await greeter.greet()).to.equal("Hello, world!");
+chai.use(waffle.solidity);
+const { expect, assert } = chai;
 
-    await greeter.setGreeting("Hola, mundo!");
-    expect(await greeter.greet()).to.equal("Hola, mundo!");
+describe("test vesting contract", function() {
+	let owner, alice, bob 
+
+    beforeEach(async () => {
+    [owner, alice, bob] = await ethers.getSigners();
+    Contract = await ethers.getContractFactory("MockCakeToken");
+    token = await Contract.deploy("cake", "cake")
+    Contract = await ethers.getContractFactory("VestingWallet");
+		staking = await Contract.deploy(token.address);
   });
-});
+  
+  it("registers a vesting schedule", async function() {
+
+  })
+
+})
