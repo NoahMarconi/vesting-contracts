@@ -229,10 +229,7 @@ describe("vesting - positive", function () {
 
     await vesting.connect(alice).requestAddressChange(charlie.address);
 
-    const receipt = await vesting.confirmAddressChange(
-      alice.address,
-      charlie.address
-    );
+    await vesting.confirmAddressChange(alice.address, charlie.address);
 
     const vestingSchedule = await vesting.schedules(charlie.address);
 
@@ -272,4 +269,72 @@ describe("vesting - positive", function () {
       Number(0.01 * 1e18)
     );
   });
+  it("should end the vesting before cliff", async function () {
+    await vesting.endVesting(alice.address, charlie.address);
+
+    const deletedSchedule = await vesting.schedules(alice.address);
+    const aliceSchedule = returnVestingSchedule(deletedSchedule);
+    const mockData = {
+      startTimeInSec: "0",
+      cliffTimeInSec: "0",
+      endTimeInSec: "0",
+      totalAmount: "0",
+      totalAmountWithdrawn: "0",
+      depositor: NULL_ADDRESS,
+      isConfirmed: false,
+    };
+
+    assert.deepEqual(
+      aliceSchedule,
+      mockData,
+      "alice vesting should have been deleted"
+    );
+    const charlieBalanceAfter = await token.balanceOf(charlie.address);
+    const totalAmount = 1 * 1e18;
+    assert.equal(charlieBalanceAfter.toString(), totalAmount.toString(), "charlie should have received the tokens")
+
+  });
+  it("should end the vesting after the cliff", async function () {
+    ethers.provider.send("evm_increaseTime", [750]);
+    ethers.provider.send("evm_mine");
+
+    const aliceBalanceBefore = await token.balanceOf(alice.address);
+
+    assert(aliceBalanceBefore.isZero(), "alice should have 0 balance");
+
+    await expect(vesting.endVesting(alice.address, charlie.address)).to.emit(vesting, "VestingEndedByOwner").withArgs(alice.address,  Number(0.754 * 1e18).toString(), Number(0.246 * 1e18).toString());
+
+    const deletedSchedule = await vesting.schedules(alice.address);
+    const aliceSchedule = returnVestingSchedule(deletedSchedule);
+
+    const mockData = {
+      startTimeInSec: "0",
+      cliffTimeInSec: "0",
+      endTimeInSec: "0",
+      totalAmount: "0",
+      totalAmountWithdrawn: "0",
+      depositor: NULL_ADDRESS,
+      isConfirmed: false,
+    };
+
+    assert.deepEqual(
+      aliceSchedule,
+      mockData,
+      "alice vesting should have been deleted"
+    );
+
+    const aliceBalanceAfter = await token.balanceOf(alice.address);
+
+    assert.closeTo(
+      Number(aliceBalanceAfter),
+      Number(0.75 * 1e18),
+      Number(0.01 * 1e18)
+    );
+
+    const charlieBalanceAfter = await token.balanceOf(charlie.address);
+    assert.closeTo(
+      Number(charlieBalanceAfter),
+      Number(0.25 * 1e18),
+      Number(0.01 * 1e18)
+    );  });
 });
