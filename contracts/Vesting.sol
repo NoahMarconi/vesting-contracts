@@ -47,47 +47,47 @@ contract VestingWallet is Ownable {
 
     modifier addressRegistered(address target) {
         VestingSchedule storage vestingSchedule = schedules[target];
-        require(vestingSchedule.depositor != address(0));
+        require(vestingSchedule.depositor != address(0), "addressRegistered");
         _;
     }
 
     modifier addressNotRegistered(address target) {
         VestingSchedule storage vestingSchedule = schedules[target];
-        require(vestingSchedule.depositor == address(0));
+        require(vestingSchedule.depositor == address(0), "addressNotRegistered");
         _;
     }
 
     modifier vestingScheduleConfirmed(address target) {
         VestingSchedule storage vestingSchedule = schedules[target];
-        require(vestingSchedule.isConfirmed);
+        require(vestingSchedule.isConfirmed, "vestingScheduleConfirmed");
         _;
     }
 
     modifier vestingScheduleNotConfirmed(address target) {
         VestingSchedule storage vestingSchedule = schedules[target];
-        require(!vestingSchedule.isConfirmed);
+        require(!vestingSchedule.isConfirmed, "vestingScheduleNotConfirmed");
         _;
     }
 
     modifier pendingAddressChangeRequest(address target) {
-        require(addressChangeRequests[target] != address(0));
+        require(addressChangeRequests[target] != address(0), "pendingAddressChangeRequest");
         _;
     }
 
     modifier pastCliffTime(address target) {
         VestingSchedule storage vestingSchedule = schedules[target];
-        require(block.timestamp > vestingSchedule.cliffTimeInSec);
+        require(block.timestamp > vestingSchedule.cliffTimeInSec, "pastCliffTime");
         _;
     }
 
     modifier validVestingScheduleTimes(uint startTimeInSec, uint cliffTimeInSec, uint endTimeInSec) {
-        require(cliffTimeInSec >= startTimeInSec);
-        require(endTimeInSec >= cliffTimeInSec);
+        require(cliffTimeInSec >= startTimeInSec, "cliff > start");
+        require(endTimeInSec >= cliffTimeInSec, "end > cliff");
         _;
     }
 
     modifier addressNotNull(address target) {
-        require(target != address(0));
+        require(target != address(0), "addressNotNull");
         _;
     }
 
@@ -155,10 +155,10 @@ contract VestingWallet is Ownable {
     {
         VestingSchedule storage vestingSchedule = schedules[msg.sender];
 
-        require(vestingSchedule.startTimeInSec == _startTimeInSec);
-        require(vestingSchedule.cliffTimeInSec == _cliffTimeInSec);
-        require(vestingSchedule.endTimeInSec == _endTimeInSec);
-        require(vestingSchedule.totalAmount == _totalAmount);
+        require(vestingSchedule.startTimeInSec == _startTimeInSec, "start");
+        require(vestingSchedule.cliffTimeInSec == _cliffTimeInSec, "cliff");
+        require(vestingSchedule.endTimeInSec == _endTimeInSec, "end");
+        require(vestingSchedule.totalAmount == _totalAmount, "amount");
 
         vestingSchedule.isConfirmed = true;
         require(vestingToken.transferFrom(vestingSchedule.depositor, address(this), _totalAmount));
