@@ -6,7 +6,7 @@ const { returnVestingSchedule } = require("../utils/utils");
 chai.use(waffle.solidity);
 const { expect, assert } = chai;
 
-describe("test vesting contract", function () {
+describe("vesting -positive", function () {
   let owner, alice, bob, token, vesting;
 
   beforeEach(async () => {
@@ -23,7 +23,8 @@ describe("test vesting contract", function () {
     const cliffTime = blockTime + 500;
     const endTime = blockTime + 1000;
     const totalAmount = 1 * 1e18;
-    await token.approve(vesting.address, totalAmount.toString());
+    const balanceOfOwner = await token.balanceOf(owner.address);
+    await token.approve(vesting.address, balanceOfOwner);
 
     await vesting.registerVestingSchedule(
       alice.address,
@@ -33,6 +34,15 @@ describe("test vesting contract", function () {
       endTime,
       totalAmount.toString()
     );
+
+    await vesting
+      .connect(alice)
+      .confirmVestingSchedule(
+        startTime,
+        cliffTime,
+        endTime,
+        totalAmount.toString()
+      );
   });
 
   it("registers and confirm vesting schedule", async function () {
@@ -105,5 +115,44 @@ describe("test vesting contract", function () {
     const vestingDataConfirmed = returnVestingSchedule(vestingStructConfirmed);
 
     assert.deepEqual(mockData, vestingDataConfirmed, "entries should match");
+  });
+
+  it("registers a withdraw 3/4 the amount after the cliff", async function () {
+    ethers.provider.send("evm_increaseTime", [750]);
+    ethers.provider.send("evm_mine");
+    const aliceBalanceBefore = await token.balanceOf(alice.address);
+
+    assert(aliceBalanceBefore.isZero(), "alice should have 0 balance");
+
+    await vesting.connect(alice).withdraw();
+
+    const aliceBalanceAfter = await token.balanceOf(alice.address);
+
+    assert.closeTo(
+      Number(aliceBalanceAfter),
+      Number(0.75 * 1e18),
+      Number(0.01 * 1e18)
+    );
+  });
+
+  it("registers a withdraw full amount", async function () {
+    ethers.provider.send("evm_increaseTime", [1001]);
+    ethers.provider.send("evm_mine");
+    const aliceBalanceBefore = await token.balanceOf(alice.address);
+
+    assert(aliceBalanceBefore.isZero(), "alice should have 0 balance");
+
+    const totalAmount = 1 * 1e18;
+    await expect(vesting.connect(alice).withdraw())
+      .to.emit(vesting, "Withdrawal")
+      .withArgs(alice.address, totalAmount.toString());
+
+    const aliceBalanceAfter = await token.balanceOf(alice.address);
+
+    assert.equal(
+      aliceBalanceAfter.toString(),
+      totalAmount.toString(),
+      "full balance should have been removed"
+    );
   });
 });
