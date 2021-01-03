@@ -1,16 +1,16 @@
 const chai = require("chai");
 const { ethers, waffle } = require("hardhat");
-const { time } = require("@openzeppelin/test-helpers");
 const should = require("should");
 const { returnVestingSchedule } = require("../utils/utils");
 chai.use(waffle.solidity);
 const { expect, assert } = chai;
 
-describe("vesting -positive", function () {
-  let owner, alice, bob, token, vesting;
+describe("vesting - positive", function () {
+  let owner, alice, bob, charlie, token, vesting;
+  const NULL_ADDRESS = `0x${"0".repeat(40)}`;
 
   beforeEach(async () => {
-    [owner, alice, bob] = await ethers.getSigners();
+    [owner, alice, bob, charlie] = await ethers.getSigners();
     Contract = await ethers.getContractFactory("MockCakeToken");
     token = await Contract.deploy("cake", "cake");
     Contract = await ethers.getContractFactory("VestingWallet");
@@ -153,6 +153,123 @@ describe("vesting -positive", function () {
       aliceBalanceAfter.toString(),
       totalAmount.toString(),
       "full balance should have been removed"
+    );
+  });
+  it("should request an address change", async function () {
+    await expect(vesting.connect(alice).requestAddressChange(charlie.address))
+      .to.emit(vesting, "AddressChangeRequested")
+      .withArgs(alice.address, charlie.address);
+
+    const addressToChangeTo = await vesting.addressChangeRequests(
+      alice.address
+    );
+    assert.equal(
+      addressToChangeTo,
+      charlie.address,
+      "charlie should have been requested"
+    );
+  });
+  it("should confirm an address change", async function () {
+    await vesting.connect(alice).requestAddressChange(charlie.address);
+
+    await vesting.confirmAddressChange(alice.address, charlie.address);
+
+    const vestingSchedule = await vesting.schedules(charlie.address);
+
+    const vestingData = returnVestingSchedule(vestingSchedule);
+
+    const startTime = blockTime;
+    const cliffTime = blockTime + 500;
+    const endTime = blockTime + 1000;
+    const totalAmount = 1 * 1e18;
+
+    const mockData = {
+      startTimeInSec: startTime.toString(),
+      cliffTimeInSec: cliffTime.toString(),
+      endTimeInSec: endTime.toString(),
+      totalAmount: totalAmount.toString(),
+      totalAmountWithdrawn: "0",
+      depositor: owner.address,
+      isConfirmed: true,
+    };
+
+    assert.deepEqual(mockData, vestingData, "entries should match");
+
+    const addressChangeRequest = await vesting.addressChangeRequests(
+      alice.address
+    );
+
+    assert.equal(
+      addressChangeRequest,
+      NULL_ADDRESS,
+      "entry should have been deleted"
+    );
+
+    ethers.provider.send("evm_increaseTime", [750]);
+    ethers.provider.send("evm_mine");
+
+    const charlieBalanceBefore = await token.balanceOf(charlie.address);
+
+    assert(charlieBalanceBefore.isZero(), "charlie should have 0 balance");
+
+    await vesting.connect(charlie).withdraw();
+
+    const charlieBalanceAfter = await token.balanceOf(charlie.address);
+
+    assert.closeTo(
+      Number(charlieBalanceAfter),
+      Number(0.75 * 1e18),
+      Number(0.01 * 1e18)
+    );
+  });
+  it("should confirm an address change after cliff", async function () {
+    ethers.provider.send("evm_increaseTime", [750]);
+    ethers.provider.send("evm_mine");
+    await vesting.connect(alice).withdraw();
+
+    await vesting.connect(alice).requestAddressChange(charlie.address);
+
+    const receipt = await vesting.confirmAddressChange(
+      alice.address,
+      charlie.address
+    );
+
+    const vestingSchedule = await vesting.schedules(charlie.address);
+
+    const vestingData = returnVestingSchedule(vestingSchedule);
+
+    const startTime = blockTime;
+    const cliffTime = blockTime + 500;
+    const endTime = blockTime + 1000;
+    const totalAmount = 1 * 1e18;
+
+    const mockData = {
+      startTimeInSec: startTime.toString(),
+      cliffTimeInSec: cliffTime.toString(),
+      endTimeInSec: endTime.toString(),
+      totalAmount: totalAmount.toString(),
+      totalAmountWithdrawn: vestingData.totalAmountWithdrawn,
+      depositor: owner.address,
+      isConfirmed: true,
+    };
+
+    assert.deepEqual(mockData, vestingData, "entries should match");
+
+    ethers.provider.send("evm_increaseTime", [750]);
+    ethers.provider.send("evm_mine");
+
+    const charlieBalanceBefore = await token.balanceOf(charlie.address);
+
+    assert(charlieBalanceBefore.isZero(), "charlie should have 0 balance");
+
+    await vesting.connect(charlie).withdraw();
+
+    const charlieBalanceAfter = await token.balanceOf(charlie.address);
+
+    assert.closeTo(
+      Number(charlieBalanceAfter),
+      Number(0.25 * 1e18),
+      Number(0.01 * 1e18)
     );
   });
 });
