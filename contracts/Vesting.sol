@@ -224,9 +224,9 @@ contract VestingWallet is Ownable {
     /// @param _newRegisteredAddress Desired address to update to.
     function requestAddressChange(address _newRegisteredAddress)
         public
-        vestingScheduleConfirmed(msg.sender)
-        addressNotRegistered(_newRegisteredAddress)
         addressNotNull(_newRegisteredAddress)
+        addressNotRegistered(_newRegisteredAddress)
+        vestingScheduleConfirmed(msg.sender)
     {
         addressChangeRequests[msg.sender] = _newRegisteredAddress;
         AddressChangeRequested(msg.sender, _newRegisteredAddress);
