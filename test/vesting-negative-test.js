@@ -134,4 +134,119 @@ describe("vesting - positive", function () {
       );
     }
   });
+
+  it.only("confirm negative tests", async function () {
+	const startTime = blockTime;
+    const cliffTime = blockTime + 500;
+    const endTime = blockTime + 1000;
+    const totalAmount = 1 * 1e18;
+
+    await vesting.registerVestingSchedule(
+      bob.address,
+      owner.address,
+      startTime,
+      cliffTime,
+      endTime,
+      totalAmount.toString()
+	);
+	
+	try {
+		await vesting
+		  .connect(alice)
+		  .confirmVestingSchedule(
+			startTime,
+			cliffTime,
+			endTime,
+			totalAmount.toString()
+		  );
+		should.fail("no error was thrown when it should have been");
+	  } catch (e) {
+		assert.equal(
+		  e.message,
+		  "VM Exception while processing transaction: revert vestingScheduleNotConfirmed"
+		);
+	  }
+
+	  try {
+		await vesting
+		  .connect(charlie)
+		  .confirmVestingSchedule(
+			startTime,
+			cliffTime,
+			endTime,
+			totalAmount.toString()
+		  );
+		should.fail("no error was thrown when it should have been");
+	  } catch (e) {
+		assert.equal(
+		  e.message,
+		  "VM Exception while processing transaction: revert addressRegistered"
+		);
+	  }
+	  try {
+		await vesting
+		  .connect(bob)
+		  .confirmVestingSchedule(
+			cliffTime,
+			cliffTime,
+			endTime,
+			totalAmount.toString()
+		  );
+		should.fail("no error was thrown when it should have been");
+	  } catch (e) {
+		assert.equal(
+		  e.message,
+		  "VM Exception while processing transaction: revert start"
+		);
+	  }
+	  try {
+		await vesting
+		  .connect(bob)
+		  .confirmVestingSchedule(
+			startTime,
+			endTime,
+			endTime,
+			totalAmount.toString()
+		  );
+		should.fail("no error was thrown when it should have been");
+	  } catch (e) {
+		assert.equal(
+		  e.message,
+		  "VM Exception while processing transaction: revert cliff"
+		);
+	  }
+	  try {
+		await vesting
+		  .connect(bob)
+		  .confirmVestingSchedule(
+			startTime,
+			cliffTime,
+			cliffTime,
+			totalAmount.toString()
+		  );
+		should.fail("no error was thrown when it should have been");
+	  } catch (e) {
+		assert.equal(
+		  e.message,
+		  "VM Exception while processing transaction: revert end"
+		);
+	  }
+	  try {
+		await vesting
+		  .connect(bob)
+		  .confirmVestingSchedule(
+			startTime,
+			cliffTime,
+			endTime,
+			"0"
+		  );
+		should.fail("no error was thrown when it should have been");
+	  } catch (e) {
+		assert.equal(
+		  e.message,
+		  "VM Exception while processing transaction: revert amount"
+		);
+	  }
+  })
+
 });
