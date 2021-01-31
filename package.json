@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
-    "compile": "hardhat compile"
+    "compile": "hardhat compile",
+    "deploy:ganache": "hardhat deploy --network ganache --token 0x5b8eb89e04b7e5800e1834a4191cc67749878435",
+    "deploy:kovan": "hardhat deploy --network kovan --token 0x5b8eb89e04b7e5800e1834a4191cc67749878435",
+    "deploy:mainnet": "hardhat deploy --network mainnet --token 0x5b8eb89e04b7e5800e1834a4191cc67749878435"
   },
   "keywords": [],
   "author": "",
@@ -20,5 +23,8 @@
     "hardhat": "^2.0.6",
     "openzeppelin-solidity": "^3.3.0",
     "should": "^13.2.3"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0"
   }
 }
