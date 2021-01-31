@@ -11,8 +11,8 @@ describe("vesting - positive", function () {
 
   beforeEach(async () => {
     [owner, alice, bob, charlie] = await ethers.getSigners();
-    Contract = await ethers.getContractFactory("MockCakeToken");
-    token = await Contract.deploy("cake", "cake");
+    Contract = await ethers.getContractFactory("MockDeltaToken");
+    token = await Contract.deploy("delta", "delta");
     Contract = await ethers.getContractFactory("VestingWallet");
     vesting = await Contract.deploy(token.address);
 

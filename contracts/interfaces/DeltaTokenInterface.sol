@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.3;
 
-interface CakeTokenInterface {
+interface DeltaTokenInterface {
     function totalSupply() external pure returns (uint);
     function balanceOf(address tokenOwner) external pure returns (uint balance);
     function allowance(address tokenOwner, address spender) external pure returns (uint remaining);

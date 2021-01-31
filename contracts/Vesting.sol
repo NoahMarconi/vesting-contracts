@@ -3,7 +3,7 @@ pragma solidity 0.7.3;
 
 import "./openzeppelin/Ownable.sol";
 import "./openzeppelin/SafeMath.sol";
-import "./interfaces/CakeTokenInterface.sol";
+import "./interfaces/DeltaTokenInterface.sol";
 
 contract VestingWallet is Ownable {
 
@@ -12,7 +12,7 @@ contract VestingWallet is Ownable {
     mapping(address => VestingSchedule) public schedules;        // vesting schedules for given addresses
     mapping(address => address) public addressChangeRequests;    // requested address changes
 
-    CakeTokenInterface vestingToken;
+    DeltaTokenInterface vestingToken;
 
     event VestingScheduleRegistered(
         address indexed registeredAddress,
@@ -94,7 +94,7 @@ contract VestingWallet is Ownable {
     /// @dev Assigns a vesting token to the wallet.
     /// @param _vestingToken Token that will be vested.
     constructor(address _vestingToken) {
-        vestingToken = CakeTokenInterface(_vestingToken);
+        vestingToken = DeltaTokenInterface(_vestingToken);
     }
 
     /// @dev Registers a vesting schedule to an address.

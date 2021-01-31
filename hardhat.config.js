@@ -17,7 +17,7 @@ task("accounts", "Prints the list of accounts", async () => {
 });
 
 task("deploy", "Deploys new token contract")
-.addParam("token", "The Cake token address")
+.addParam("token", "The Delta token address")
   .setAction(async (args, hre) => {
     // We get the contract to deploy
     const Vesting = await hre.ethers.getContractFactory("VestingWallet");
